@@ -8,15 +8,6 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-/* API
- *
- * NOTE:
- * all rds' pointers point to the beginning of the string buffer, so there's no use difference between them and a cstring in that aspect
- * all rds have implicit null termination, so you can printf
- * However, the string is "binary-safe" since its length is stored in the header, meaning in reality the string could be an array of bytes which may or may not have \0 in the middle
- * So it's up to the user to know what's in the string
- * */
-
 #define RDS_MAX_PREALLOC 0x100000 /* 1 MiB; an aribtrary limit for the linear increase growth of the string, once a string has reached this size use constant growth instead  */
 
 /* types of rds, must fit in 3 bits */
@@ -29,22 +20,7 @@ extern "C" {
 #define RDS_TYPE_MASK 0b00000111
 #define RDS_TYPE_BITS 3
 
-/* DESIGN DECISIONS
- * format:
- * [ header | C string | '\0' ]
- * header: 
- *	the smallest possible that can accomodate the C string's size
- *	don't have a capacity variable because that's implicit to the type
- *	uint64 -> 2**64 - 1 
- *	uint32 -> 2**32 - 1
- *	uint16 -> 2**16 - 1
- *	uint8  -> 2**8  - 1
- *	then a special 5-bit for really short, size <= 31 
- *	no struct for that, the flags field will be used directly
- *
- *	Notes:
- *	if an rds is returned by a function, the pointer points to the beginning of the C string
- *
+/* 
  *	structure:
  *	rds_header## {
  *		unsigned## size;     <- size of the string
@@ -93,7 +69,8 @@ struct rds_header5
 	unsigned char flags; /* 5 msb for size, 3 lsb for type */
 	char buf[];	
 } __attribute__((packed));
-/* I recommend to use rds instead of char * in programs to distinguish between the two types, though functionally it should be the same */
+
+/* It's recommended to use rds instead of char * to distinguish between the two types, though functionally it should be the same */
 typedef char *rds;
 
 /* get length of an rds' buffer */
@@ -114,21 +91,21 @@ rds rds_new(const char *s);
 /* delete an rds, pointer is invalid after */
 void rds_del(rds s); 
 
-/* append null-terminated cstring 'b' to rds 'a' knowing 'b''s len 
- * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
- *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+/* append cstring 'b' to rds 'a' knowing 'b''s len 
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc/malloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. realloc/new malloc)
  * */
 void rds_append_len(rds *a, const void *b, size_t b_len);
 
 /* append buffer of rds 'b' to rds 'a'
- * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
- *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc/malloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. realloc/new malloc)
  * */
 void rds_append(rds *a, const rds b);
 
-/* append null-terminated cstring 'b' to rds 'a'
- * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
- *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+/* append cstring 'b' to rds 'a'
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc/malloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. realloc/new malloc)
  * */
 void rds_append_str(rds *a, const char *b);
 
