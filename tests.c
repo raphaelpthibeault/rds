@@ -167,6 +167,90 @@ rds_strlen_should_return_zero_when_zero(void **state)
 	assert_int_equal(len, 0);
 }
 
+static void
+rds_append_len_should_append_type5(void **state)
+{
+	(void)state;
+	rds s = rds_init();
+	size_t s_len = rds_strlen(s);
+	size_t cstr_len = (1 << 5) - 1;
+	char cstr[cstr_len];
+	memset(cstr, 1, cstr_len);
+
+	rds_append_len(&s, cstr, cstr_len);
+	
+	assert_int_equal(s_len + cstr_len, rds_strlen(s));
+	assert_string_equal(s + s_len, cstr);
+}
+
+static void
+rds_append_len_should_append_type8(void **state)
+{
+	(void)state;
+	rds s = rds_init();
+	size_t s_len = rds_strlen(s);
+	size_t cstr_len = (1 << 8) - 1;
+	char cstr[cstr_len];
+	memset(cstr, 1, cstr_len);
+
+	rds_append_len(&s, cstr, cstr_len);
+	
+	assert_int_equal(s_len + cstr_len, rds_strlen(s));
+	assert_string_equal(s + s_len, cstr);
+}
+
+static void
+rds_append_len_should_append_type16(void **state)
+{
+	(void)state;
+	rds s = rds_init();
+	size_t s_len = rds_strlen(s);
+	size_t cstr_len = (1 << 16) - 1;
+	char *cstr = malloc(cstr_len * sizeof(char)); 
+	memset(cstr, 1, cstr_len);
+
+	rds_append_len(&s, cstr, cstr_len);
+	
+	assert_int_equal(s_len + cstr_len, rds_strlen(s));
+	assert_string_equal(s + s_len, cstr);
+}
+
+#ifdef TEST_LARGE
+
+static void
+rds_append_len_should_append_type32(void **state)
+{
+	(void)state;
+	rds s = rds_init();
+	size_t s_len = rds_strlen(s);
+	size_t cstr_len = (1ULL << 32) - 1;
+	char *cstr = malloc(cstr_len * sizeof(char)); 
+	memset(cstr, 1, cstr_len);
+
+	rds_append_len(&s, cstr, cstr_len);
+	
+	assert_int_equal(s_len + cstr_len, rds_strlen(s));
+	assert_string_equal(s + s_len, cstr);
+}
+
+static void
+rds_append_len_should_append_type64(void **state)
+{
+	(void)state;
+	rds s = rds_init();
+	size_t s_len = rds_strlen(s);
+	size_t cstr_len = 1ULL << 32;
+	char *cstr = malloc(cstr_len * sizeof(char)); 
+	memset(cstr, 1, cstr_len);
+
+	rds_append_len(&s, cstr, cstr_len);
+	
+	assert_int_equal(s_len + cstr_len, rds_strlen(s));
+	assert_string_equal(s + s_len, cstr);
+}
+
+#endif
+
 int
 main(void)
 {
@@ -185,6 +269,14 @@ main(void)
 		cmocka_unit_test(rds_new_len_should_create_type64),
 #endif
 		cmocka_unit_test(rds_strlen_should_return_zero_when_zero),
+		cmocka_unit_test(rds_append_len_should_append_type5),
+		cmocka_unit_test(rds_append_len_should_append_type8),
+		cmocka_unit_test(rds_append_len_should_append_type16),
+#ifdef TEST_LARGE
+		cmocka_unit_test(rds_append_len_should_append_type32),
+		//cmocka_unit_test(rds_append_len_should_append_type64), // uncomment if you want to run it, will munch all of your memory
+#endif
 	};
+
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

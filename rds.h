@@ -10,12 +10,14 @@ extern "C" {
 
 /* API
  *
- * Notes:
+ * NOTE:
  * all rds' pointers point to the beginning of the string buffer, so there's no use difference between them and a cstring in that aspect
  * all rds have implicit null termination, so you can printf
  * However, the string is "binary-safe" since its length is stored in the header, meaning in reality the string could be an array of bytes which may or may not have \0 in the middle
  * So it's up to the user to know what's in the string
  * */
+
+#define RDS_MAX_PREALLOC 0x100000 /* 1 MiB; an aribtrary limit for the linear increase growth of the string, once a string has reached this size use constant growth instead  */
 
 /* types of rds, must fit in 3 bits */
 #define RDS_TYPE_64 4
@@ -27,7 +29,8 @@ extern "C" {
 #define RDS_TYPE_MASK 0b00000111
 #define RDS_TYPE_BITS 3
 
-/* TODO: Put this in the README under some Design Decisions header
+/* DESIGN DECISIONS
+ * format:
  * [ header | C string | '\0' ]
  * header: 
  *	the smallest possible that can accomodate the C string's size
@@ -111,14 +114,23 @@ rds rds_new(const char *s);
 /* delete an rds, pointer is invalid after */
 void rds_del(rds s); 
 
-/* append buffer of rds 'b' to rds 'a', returns the new string. 'a' is invalid after */
-rds rds_append(rds a, const rds b);
+/* append null-terminated cstring 'b' to rds 'a' knowing 'b''s len 
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+ * */
+void rds_append_len(rds *a, const void *b, size_t b_len);
 
-/* append null-terminated cstring 'b' to rds 'a' knowing 'b''s len, returns the new string. 'a' is invalid after */
-rds rds_append_str_len(rds a, const void *b, size_t len);
+/* append buffer of rds 'b' to rds 'a'
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+ * */
+void rds_append(rds *a, const rds b);
 
-/* append null-terminated cstring 'b' to rds 'a', returns the new string. 'a' is invalid after */
-rds rds_append_str(rds a, const char *b);
+/* append null-terminated cstring 'b' to rds 'a'
+ * NOTE: 1. ptr 'a' may or may not be trashed after the call (e.g. realloc could fail)
+ *       2. ptr 'a' may or may not hold a different value after the call (e.g. changed rds type, requiring a malloc instead of a realloc)
+ * */
+void rds_append_str(rds *a, const char *b);
 
 #ifdef __cplusplus
 };
