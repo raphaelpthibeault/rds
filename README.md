@@ -1,8 +1,7 @@
 Dynamic Strings
 ===
 
-RDS is a library for dynamic strings. It implements dynamic strings that are more efficient than the traditional varieties that use a structure 
-and also maintain compatibility with regular C strings. RDS achieves this with a metadata prefix, aka header. 
+RDS is a library for dynamic strings. It implements dynamic strings that are more efficient than the traditional varieties that use a structure, and also maintains compatibility with regular C strings. RDS achieves this with a metadata prefix, aka header. 
 The header contains the smallest possible metadata that can accommodate the size of the C string. 
 
 An rds has the following format:
